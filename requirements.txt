@@ -1,0 +1,4 @@
+# Core: calculators, agent, data generator, evaluation, web app. No GPU needed.
+pydantic>=2.5
+requests>=2.28
+flask>=2.3

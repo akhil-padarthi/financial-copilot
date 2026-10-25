@@ -1,0 +1,4 @@
+# Normalize line endings so the repo looks the same on Windows, macOS and Linux.
+* text=auto
+*.png binary
+*.gguf binary

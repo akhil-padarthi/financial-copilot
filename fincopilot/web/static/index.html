@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Financial Copilot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F3F6F4;
+    --ink: #17212B;
+    --muted: #56655F;
+    --bottle: #24584A;
+    --red-ink: #B4382F;
+    --rule: #CFDAD5;
+    --tape: #FFFFFF;
+    --tape-ink: #1F2A33;
+    --field: #FFFFFF;
+    --sans: "Public Sans", "Helvetica Neue", Arial, sans-serif;
+    --type: "Courier Prime", "Courier New", Courier, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #141B19; --ink: #E3EBE7; --muted: #9AABA4; --bottle: #79BFA6; --red-ink: #E8877C;
+      --rule: #2C3935; --tape: #1D2623; --tape-ink: #DCE6E1; --field: #1A2220;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--paper); }
+  body {
+    margin: 0; min-height: 100vh; display: flex; flex-direction: column;
+    background: var(--paper); color: var(--ink);
+    font: 400 17px/1.55 var(--sans); -webkit-font-smoothing: antialiased;
+  }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  :focus-visible { outline: 2px solid var(--bottle); outline-offset: 2px; border-radius: 2px; }
+
+  /* Header */
+  .bar {
+    position: sticky; top: 0; z-index: 2; background: var(--paper);
+    border-bottom: 1px solid var(--rule);
+  }
+  .bar-inner {
+    max-width: 760px; margin: 0 auto; padding: 14px 20px;
+    display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+  }
+  .bar h1 { margin: 0; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+  .model { margin: 0; color: var(--muted); font-size: 14px; flex: 1; min-width: 0; }
+  .model::before {
+    content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 7px; border-radius: 50%;
+    background: var(--rule); vertical-align: 1px;
+  }
+  .model.ready::before { background: var(--bottle); }
+  .text-button {
+    background: none; border: 0; padding: 4px 0; color: var(--bottle); font: 500 14px var(--sans);
+    cursor: pointer; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px;
+  }
+  .text-button:hover { text-decoration-thickness: 2px; }
+
+  /* Conversation */
+  main { flex: 1; width: 100%; max-width: 760px; margin: 0 auto; padding: 36px 20px 24px; }
+  .intro h2 {
+    margin: 0 0 16px; max-width: 17ch; font-size: clamp(30px, 6vw, 42px); line-height: 1.08;
+    font-weight: 700; letter-spacing: -0.025em;
+  }
+  .intro p { margin: 0 0 14px; max-width: 62ch; color: var(--muted); }
+  .intro .demo-note { color: var(--ink); border-left: 3px solid var(--bottle); padding-left: 12px; }
+  .examples { list-style: none; margin: 22px 0 0; padding: 0; border-top: 1px solid var(--rule); }
+  .examples li { border-bottom: 1px solid var(--rule); }
+  .examples button {
+    width: 100%; text-align: left; background: none; border: 0; padding: 12px 0; cursor: pointer;
+    color: var(--ink); font: 400 16px/1.45 var(--sans);
+  }
+  .examples button:hover { color: var(--bottle); }
+
+  .turn { padding: 26px 0 30px; border-top: 1px solid var(--rule); }
+  .intro[hidden] + .turn { border-top: 0; padding-top: 0; }
+  .q { margin: 0 0 10px; font-weight: 600; max-width: 62ch; }
+  .answer { margin: 0; max-width: 62ch; white-space: pre-wrap; }
+  .answer.pending { color: var(--muted); }
+  .answer.error { border-left: 3px solid var(--red-ink); padding-left: 12px; }
+  .quiet { margin: 10px 0 0; color: var(--muted); font-size: 14px; }
+
+  /* The calculator tape */
+  .work { margin-top: 16px; }
+  .work .text-button { margin-bottom: 8px; }
+  .tape-wrap { filter: drop-shadow(0 1px 1.5px rgba(23, 33, 43, 0.18)); max-width: 470px; }
+  .tape {
+    --zig: 7px;
+    list-style: none; margin: 0; padding: 16px 20px calc(18px + var(--zig));
+    background: var(--tape); color: var(--tape-ink); font: 400 15px/1.5 var(--type);
+    -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / calc(2 * var(--zig)) 100%;
+            mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / calc(2 * var(--zig)) 100%;
+  }
+  .tape.printing { animation: print 900ms steps(14, end) both; }
+  @keyframes print { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+  .step + .step { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--rule); }
+  .step-head { display: flex; gap: 10px; font-weight: 700; }
+  .step-head .n { width: 1.2em; color: var(--muted); font-weight: 400; }
+  .step-head .stage { flex: 1; }
+  .mark { font-weight: 700; }
+  .ok .mark, .info .mark { color: var(--bottle); }
+  .fixed .mark { color: var(--ink); }
+  .failed .mark { color: var(--red-ink); }
+  .failed .stage { color: var(--red-ink); }
+  .detail { margin: 2px 0 0 calc(1.2em + 10px); }
+  .rows { margin: 6px 0 0 calc(1.2em + 10px); display: grid; grid-template-columns: auto 1fr; }
+  .rows dt, .rows dd { margin: 0; padding: 1px 0; border-bottom: 1px dotted var(--rule); }
+  .rows dt { padding-right: 12px; }
+  .rows dd { text-align: right; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .rows .total { font-weight: 700; border-top: 3px double var(--tape-ink); border-bottom: 0; padding-top: 3px; }
+
+  /* Composer */
+  .composer-wrap { position: sticky; bottom: 0; background: var(--paper); border-top: 1px solid var(--rule); }
+  .composer { max-width: 760px; margin: 0 auto; padding: 14px 20px 18px; display: flex; gap: 10px; align-items: flex-end; }
+  .composer textarea {
+    flex: 1; min-height: 46px; max-height: 180px; resize: none; padding: 11px 14px;
+    background: var(--field); color: var(--ink); border: 1px solid var(--rule); border-radius: 6px;
+    font: 400 16px/1.45 var(--sans);
+  }
+  .composer textarea:focus-visible { outline-offset: 0; }
+  .composer button {
+    height: 46px; padding: 0 22px; border: 0; border-radius: 6px; cursor: pointer;
+    background: var(--bottle); color: var(--paper); font: 600 16px var(--sans);
+  }
+  .composer button:disabled { opacity: 0.55; cursor: progress; }
+
+  @media (max-width: 640px) {
+    .bar-inner { display: grid; grid-template-columns: 1fr auto; row-gap: 2px; }
+    .model { grid-column: 1 / -1; grid-row: 2; }
+    #reset { grid-column: 2; grid-row: 1; }
+  }
+  @media (max-width: 520px) {
+    body { font-size: 16px; }
+    main { padding-top: 24px; }
+    .tape { padding-left: 14px; padding-right: 14px; font-size: 14px; }
+    .composer { padding-bottom: 14px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tape.printing { animation: none; }
+  }
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="bar-inner">
+    <h1>Financial Copilot</h1>
+    <p class="model" id="model">Connecting to the model</p>
+    <button class="text-button" id="reset" type="button" hidden>Start over</button>
+  </div>
+</header>
+
+<main id="log" aria-live="polite">
+  <section class="intro" id="intro">
+    <h2>Ask a money question. Code does the math.</h2>
+    <p>Llama 3.1 8B reads your question, picks one of 38 calculators and fills in the numbers. The header shows which version is answering. Python computes the answer, and every figure in the reply is checked against that result. Each answer shows its work on the tape below it.</p>
+    <p class="demo-note" id="demo-note" hidden>Demo mode: replies to these example questions are recorded, so no model is needed. The calculations are live.</p>
+    <ul class="examples" id="examples">
+      <li><button type="button">If I invest $10,000 at 7% for 10 years, how much will I have?</button></li>
+      <li><button type="button">What's the monthly payment on a $35k car loan, 72 months at 7.9%?</button></li>
+      <li><button type="button">I have $8,750 on a card at 27.24% APR. If I pay $300 a month, how long until it's paid off?</button></li>
+      <li><button type="button">How much do I need to save each month to have $1 million in 35 years at 7%?</button></li>
+      <li><button type="button">What would my monthly mortgage payment be on a $400,000 house?</button></li>
+      <li><button type="button">Should I buy Nvidia stock right now?</button></li>
+    </ul>
+  </section>
+</main>
+
+<div class="composer-wrap">
+  <form class="composer" id="composer">
+    <label class="sr-only" for="q">Your question</label>
+    <textarea id="q" rows="1" placeholder="Ask a money question"></textarea>
+    <button type="submit" id="send">Ask</button>
+  </form>
+</div>
+
+<script>
+(() => {
+  const log = document.getElementById("log");
+  const intro = document.getElementById("intro");
+  const form = document.getElementById("composer");
+  const input = document.getElementById("q");
+  const send = document.getElementById("send");
+  const reset = document.getElementById("reset");
+  const modelEl = document.getElementById("model");
+  let history = [];
+  let busy = false;
+
+  const STAGES = { route: "Route", extract: "Read values", validate: "Check the form", calculate: "Compute",
+                   explain: "Explain", clarify: "Ask instead of guess", ground: "Check the numbers" };
+  const MARKS = { ok: ["✓", "done"], info: ["✓", "done"], fixed: ["↺", "corrected"], failed: ["✗", "rejected"] };
+
+  fetch("api/info").then(r => r.json()).then(info => {
+    modelEl.textContent = info.model;
+    modelEl.classList.add("ready");
+    if (info.model.startsWith("Demo mode")) document.getElementById("demo-note").hidden = false;
+  }).catch(() => { modelEl.textContent = "Model server not reachable"; });
+
+  function el(tag, cls, text) {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function fmt(v) {
+    if (v === null || v === undefined) return "—";
+    if (typeof v === "boolean") return v ? "yes" : "no";
+    if (Array.isArray(v)) return v.map(fmt).join(", ");
+    if (typeof v === "number") {
+      const whole = Number.isInteger(v);
+      const opts = whole ? {} : Math.abs(v) >= 100 ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { maximumFractionDigits: 4 };
+      return v.toLocaleString("en-US", opts);
+    }
+    return String(v);
+  }
+
+  function rows(obj, highlightFirst) {
+    const dl = el("dl", "rows");
+    Object.entries(obj).forEach(([k, v], i) => {
+      const dt = el("dt", highlightFirst && i === 0 ? "total" : "", k);
+      const dd = el("dd", highlightFirst && i === 0 ? "total" : "", fmt(v));
+      dl.append(dt, dd);
+    });
+    return dl;
+  }
+
+  function tape(steps) {
+    const ol = el("ol", "tape printing");
+    steps.forEach((s, i) => {
+      const li = el("li", "step " + s.status);
+      const head = el("div", "step-head");
+      const [mark, word] = MARKS[s.status] || ["", ""];
+      const markEl = el("span", "mark", mark);
+      markEl.setAttribute("aria-label", word);
+      head.append(el("span", "n", String(i + 1)), el("span", "stage", STAGES[s.stage] || s.stage), markEl);
+      li.append(head, el("p", "detail", s.detail));
+      if (s.stage === "extract" && s.data.parameters) li.append(rows(s.data.parameters, false));
+      if (s.stage === "calculate" && s.data.result) li.append(rows(s.data.result, true));
+      ol.append(li);
+    });
+    ol.addEventListener("animationend", () => ol.classList.remove("printing"), { once: true });
+    return ol;
+  }
+
+  function addTurn(question) {
+    intro.hidden = true;
+    reset.hidden = false;
+    const turn = el("article", "turn");
+    turn.append(el("p", "q", question));
+    const answer = el("p", "answer pending", "Working it out…");
+    answer.setAttribute("aria-busy", "true");
+    turn.append(answer);
+    log.append(turn);
+    turn.scrollIntoView({ behavior: "smooth", block: "start" });
+    return { turn, answer };
+  }
+
+  function showReply({ turn, answer }, reply) {
+    answer.className = "answer";
+    answer.removeAttribute("aria-busy");
+    answer.textContent = reply.text;
+    const calculated = reply.steps.some(s => s.stage !== "route" || s.status !== "ok");
+    if (!calculated) {
+      turn.append(el("p", "quiet", "No calculator was used for this reply."));
+      return;
+    }
+    const work = el("div", "work");
+    const toggle = el("button", "text-button", "Hide the work");
+    toggle.type = "button";
+    toggle.setAttribute("aria-expanded", "true");
+    const wrap = el("div", "tape-wrap");
+    wrap.append(tape(reply.steps));
+    toggle.addEventListener("click", () => {
+      const open = toggle.getAttribute("aria-expanded") === "true";
+      toggle.setAttribute("aria-expanded", String(!open));
+      toggle.textContent = open ? "Show the work" : "Hide the work";
+      wrap.hidden = open;
+    });
+    work.append(toggle, wrap);
+    turn.append(work);
+  }
+
+  async function ask(question) {
+    if (busy || !question.trim()) return;
+    busy = true;
+    send.disabled = true;
+    const ui = addTurn(question.trim());
+    const slow = setTimeout(() => {
+      if (ui.answer.classList.contains("pending")) {
+        ui.answer.textContent = "Still working. If the model was asleep, the first answer can take a minute or two while it starts.";
+      }
+    }, 8000);
+    try {
+      const res = await fetch("api/chat", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: question, history })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `The server returned ${res.status}.`);
+      history = data.history;
+      showReply(ui, data);
+    } catch (err) {
+      ui.answer.className = "answer error";
+      ui.answer.removeAttribute("aria-busy");
+      ui.answer.textContent = err.message.includes("fetch") ? "The app server stopped responding. Restart it and try again." : err.message;
+    } finally {
+      clearTimeout(slow);
+      busy = false;
+      send.disabled = false;
+      input.focus();
+    }
+  }
+
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    const q = input.value;
+    input.value = "";
+    input.style.height = "";
+    ask(q);
+  });
+  input.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+  });
+  input.addEventListener("input", () => {
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 180) + "px";
+  });
+  document.getElementById("examples").addEventListener("click", e => {
+    if (e.target.matches("button")) ask(e.target.textContent);
+  });
+  reset.addEventListener("click", () => {
+    history = [];
+    log.querySelectorAll(".turn").forEach(t => t.remove());
+    intro.hidden = false;
+    reset.hidden = true;
+    input.focus();
+  });
+})();
+</script>
+</body>
+</html>

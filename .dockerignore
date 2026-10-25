@@ -1,0 +1,13 @@
+.git
+.venv
+venv
+__pycache__
+*.pyc
+data
+outputs
+reports
+tests
+training
+docs
+*.gguf
+*.zip

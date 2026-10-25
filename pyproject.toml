@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fincopilot"
+version = "1.0.0"
+description = "A fine-tuned Llama 3.1 8B that routes money questions to exact Python calculators."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Sai Akhil Padarthi" }]
+dependencies = ["pydantic>=2.5", "requests>=2.28", "flask>=2.3"]
+
+[project.optional-dependencies]
+train = ["unsloth", "huggingface_hub"]
+dev = ["pytest"]
+
+[project.scripts]
+fincopilot = "fincopilot.cli:main"
+fincopilot-web = "fincopilot.web.server:main"
+
+[tool.setuptools.packages.find]
+include = ["fincopilot*"]
+
+[tool.setuptools.package-data]
+"fincopilot.web" = ["static/*.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

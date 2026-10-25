@@ -1,0 +1,5 @@
+# Training and GPU inference (Colab or a machine with an NVIDIA GPU).
+# Unsloth pulls in torch, transformers, peft, trl, bitsandbytes and accelerate.
+-r requirements.txt
+unsloth
+huggingface_hub

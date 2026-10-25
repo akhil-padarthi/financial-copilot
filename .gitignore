@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Generated (rebuild with: python -m fincopilot.datagen.generate --out data)
+data/*.jsonl
+
+# Training and evaluation outputs
+outputs/
+reports/
+*.gguf
+_unsloth_temporary_saved_buffers/
+unsloth_compiled_cache/
